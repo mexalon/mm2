@@ -402,3 +402,42 @@ def label_cardinal_directions(ax, r=1.08, fontsize=12):
     ax.text( 0, -r, 'S', ha='center', va='top',    fontsize=fontsize)
     ax.text( r,  0, 'E', ha='left',   va='center', fontsize=fontsize)
     ax.text(-r,  0, 'W', ha='right',  va='center', fontsize=fontsize)
+
+
+def plot_mu_cohesion_histograms(mu, cohesion, bins=50):
+    """
+    Отображает маленькие гистограммы распределения коэффициента трения и сцепления.
+
+    Параметры:
+    ----------
+    mu : np.ndarray
+        Массив коэффициентов внутреннего трения
+
+    cohesion : np.ndarray
+        Массив сцеплений
+
+    bins : int
+        Количество бинов в гистограммах
+    """
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, 2, figsize=(6, 2.5), constrained_layout=True)
+
+    axes[0].hist(mu, bins=bins, color='skyblue', edgecolor='k', alpha=0.8)
+    axes[0].set_title('Коэффициент трения μ', fontsize=10)
+    axes[0].set_xlabel('μ', fontsize=10)
+    axes[0].set_ylabel('Частота', fontsize=10)
+    axes[0].tick_params(labelsize=9)
+
+    axes[1].hist(cohesion, bins=bins, color='lightcoral', edgecolor='k', alpha=0.8)
+    axes[1].set_title('Сцепление C', fontsize=10)
+    axes[1].set_xlabel('C, МПа', fontsize=10)
+    axes[1].set_ylabel('Частота', fontsize=10)
+    axes[1].tick_params(labelsize=9)
+
+    for ax in axes:
+        ax.grid(True, linestyle=':', linewidth=0.5)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+    plt.show()

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import weibull_min
 
 class FractureSeed:
-    def __init__(self, strike=0.0, dip=0.0, mu=0.83, cohesion=0.1):
+    def __init__(self, strike=0.0, dip=0.0, mu=0.6, cohesion=0.01):
         """
         Базовый класс: задаёт ориентацию «материнской» трещины.
         Хранит strike/dip, mu/cohesion, рассчитывает rotation_matrix и normal.
@@ -68,10 +68,10 @@ class RandomFractureSeed(FractureSeed):
                           N: int,
                           strike_std: float = 0,
                           dip_std: float = 0,
-                          mu_weibull_shape: float = 1.8,
-                          mu_weibull_scale: float = None, # type: ignore
-                          cohesion_weibull_shape: float = 1.8,
-                          cohesion_weibull_scale: float = None,
+                          mu_weibull_loc: float = None, # если не передано, то будет просто мю
+                          mu_weibull_scale: float = 0, # если 0, будет постоянная величина
+                          cohesion_weibull_loc: float = None, 
+                          cohesion_weibull_scale: float = 0,
                           random_seed: int = None):
         """
         Ансамбль по нормальным отклонениям углов и Weibull-параметрам:
@@ -87,11 +87,11 @@ class RandomFractureSeed(FractureSeed):
             np.random.seed(random_seed)
 
         # 1) Weibull-сэмплирование
-        mu_scale = mu_weibull_scale or self.mu
-        coh_scale = cohesion_weibull_scale or self.cohesion
+        mu_loc = mu_weibull_loc or self.mu
+        ensemble_mu = weibull_min.rvs(loc=mu_loc, scale=mu_weibull_scale, c=1.8, size=N)
 
-        ensemble_mu      = weibull_min.rvs(c=mu_weibull_shape,      scale=mu_scale, size=N)
-        ensemble_cohesion = weibull_min.rvs(c=cohesion_weibull_shape, scale=coh_scale, size=N)
+        coh_loc = cohesion_weibull_loc or self.cohesion
+        ensemble_cohesion = weibull_min.rvs(loc=coh_loc, scale=cohesion_weibull_scale, c=1.8, size=N)
 
         # 2) Углы из нормального распределения
         ensemble_strikes = np.random.normal(self.strike, strike_std, size=N)
@@ -118,14 +118,14 @@ class FisherFractureSeed(FractureSeed):
     def generate_ensemble(self,
                           N: int,
                           kappa: float = 5.0,
-                          mu_weibull_shape: float = 1.8,
-                          mu_weibull_scale: float = None, # type: ignore
-                          cohesion_weibull_shape: float = 1.8,
-                          cohesion_weibull_scale: float = None, # type: ignore
+                          mu_weibull_loc: float = None, # если не передано, то будет просто мю
+                          mu_weibull_scale: float = 0,  # если 0, будет постоянная величина
+                          cohesion_weibull_loc: float = None,
+                          cohesion_weibull_scale: float = 0, 
                           random_seed: int = None): # type: ignore
         """
         Ансамбль по распределению Фишера + Weibull:
-         1) mu, cohesion ~ Weibull(self.mu,self.cohesion)
+         1) mu, cohesion ~ Weibull или просто постоянные
          2) θ по обратному CDF Фишера (kappa), φ ~ U[0,2π)
          3) локальные normals вокруг [0,0,-1]
          4) поворот self.rotation_matrix → normals_global
@@ -139,12 +139,12 @@ class FisherFractureSeed(FractureSeed):
         if random_seed is not None:
             np.random.seed(random_seed)
 
-        # 1) Weibull-сэмплирование
-        mu_scale = mu_weibull_scale or self.mu
-        coh_scale = cohesion_weibull_scale or self.cohesion
+        # 1) Weibull-сэмплирование к-та трения и когезии. Если не переданы параметры scale то берутся значения для материнской трещины      
+        mu_loc = mu_weibull_loc or self.mu
+        ensemble_mu = weibull_min.rvs(loc=mu_loc, scale=mu_weibull_scale, c=1.8, size=N)
 
-        ensemble_mu       = weibull_min.rvs(c=mu_weibull_shape,      scale=mu_scale, size=N)
-        ensemble_cohesion = weibull_min.rvs(c=cohesion_weibull_shape, scale=coh_scale, size=N)
+        coh_loc = cohesion_weibull_loc or self.cohesion
+        ensemble_cohesion = weibull_min.rvs(loc=coh_loc, scale=cohesion_weibull_scale, c=1.8, size=N)
 
         # 2) Fisher θ и φ
         u = np.random.rand(N)
