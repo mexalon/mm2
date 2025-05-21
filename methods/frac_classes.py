@@ -94,11 +94,18 @@ class RandomFractureSeed(FractureSeed):
         ensemble_cohesion = weibull_min.rvs(loc=coh_loc, scale=cohesion_weibull_scale, c=1.8, size=N)
 
         # 2) Углы из нормального распределения
-        ensemble_strikes = np.random.normal(self.strike, strike_std, size=N)
-        ensemble_dips    = np.random.normal(self.dip,    dip_std,    size=N)
+        ensemble_strikes = np.random.normal(self.strike, strike_std, size=N) % 360
+        ensemble_dips    = np.random.normal(self.dip,    dip_std,    size=N) % 360
 
         # 3) Нормали по strike/dip
         ensemble_normals = RandomFractureSeed.build_normal_batch(ensemble_strikes, ensemble_dips)
+        
+        # 4) Делам так, чтобы вектор нормали всегда смотрел в нижнюю полусферу. 
+        # Если нормаль смотрит в верхнюю - переворачиваем на противоположную и меняем страйк на противоположный. 
+        nx, ny, nz = ensemble_normals.T.copy()
+        ensemble_normals[nz>0] = - ensemble_normals[nz>0]
+        ensemble_strikes[nz>0] = (ensemble_strikes[nz>0] + 180) % 360
+        ensemble_dips[nz>0] = 180 - ensemble_dips[nz>0] 
 
         # Сохраняем в атрибуты
         self.ensemble_normals  = ensemble_normals
@@ -161,6 +168,11 @@ class FisherFractureSeed(FractureSeed):
         # 4) Поворот в глобальную систему
         R = self.rotation_matrix
         ensemble_normals = normals_local @ R.T
+        
+        # 4/5) Делам так, чтобы вектор нормали всегда смотрел в нижнюю полусферу. 
+        # Если нормаль смотрит в верхнюю - переворачиваем на противоположную и меняем страйк на противоположный. 
+        nx, ny, nz = ensemble_normals.T
+        ensemble_normals[nz>0] = - ensemble_normals[nz>0]
 
         # 5) strike: направление линии пересечения
         nx, ny, nz = ensemble_normals.T

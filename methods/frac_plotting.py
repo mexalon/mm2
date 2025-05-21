@@ -211,7 +211,9 @@ def plot_fracture_normals_and_planes(normals, seed=None, max_to_plot=1000):
     """
     # Нормализация векторов и отбор только нижней полусферы (nz < 0)
     normals = normals / np.linalg.norm(normals, axis=1, keepdims=True)
-    normals[normals[:, 2] > 0] = - normals[normals[:, 2] > 0] # переворачиваем нормали, которые смотрят вверх на противоположные, чотобы смотрели вниз
+
+    # это уже не нужно, перевернули при создании ->
+    # normals[normals[:, 2] > 0] = - normals[normals[:, 2] > 0] # переворачиваем нормали, которые смотрят вверх на противоположные, чотобы смотрели вниз
     
     # Ограничение количества нормалей для отрисовки
     if len(normals) > max_to_plot:
@@ -276,7 +278,10 @@ def plot_fracture_density(normals):
     """
     # Нормализация и фильтрация по z < 0
     normals = normals / np.linalg.norm(normals, axis=1, keepdims=True)
-    normals[normals[:, 2] > 0] = - normals[normals[:, 2] > 0] # переворачиваем нормали, которые смотрят вверх на противоположные, чотобы смотрели вниз
+
+    # это уже не нужно, перевернули при создании ->
+    # normals[normals[:, 2] > 0] = - normals[normals[:, 2] > 0] # переворачиваем нормали, которые смотрят вверх на противоположные, чотобы смотрели вниз
+    
     x, y = normals[:, 0], normals[:, 1]
 
     # Фигура с двумя осями: основная и под colorbar
