@@ -1,53 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-def compute_normalized_event_curve(time, events_vs_time, time_unit=None):
-    """
-    Вычисляет нормированную кривую микросейсмических событий, возможно с агрегацией по времени.
-
-    Параметры:
-    ----------
-    time : np.ndarray (T,)
-        Массив времени в секундах
-
-    events_vs_time : np.ndarray (T,)
-        Массив количества микросейсмических событий во времени
-
-    time_unit : str or None
-        Единица агрегации времени: 'm', 'h', 'd' — минуты, часы или дни.
-        Если None, возвращается нормированная кривая без агрегации.
-
-    Возвращает:
-    -----------
-    time_out : np.ndarray
-        Временные метки (в нужной размерности)
-
-    event_curve : np.ndarray
-        Нормированная кривая событий по бинам
-    """
-    unit_multipliers = {'m': 60, 'h': 3600, 'd': 86400}
-
-    total_events = np.sum(events_vs_time)
-    norm_events = events_vs_time / total_events if total_events > 0 else events_vs_time
-
-    if time_unit is None:
-        return time, norm_events
-
-    if time_unit not in unit_multipliers:
-        raise ValueError("time_unit должен быть одним из: 'm', 'h', 'd' или None")
-
-    scale = unit_multipliers[time_unit]
-    time_scaled = time / scale
-
-    bin_edges = np.arange(np.floor(time_scaled.min()), np.ceil(time_scaled.max()) + 1)
-    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-
-    binned_events, _ = np.histogram(time_scaled, bins=bin_edges, weights=norm_events)
-
-    return bin_centers, binned_events
+from methods.events import compute_normalized_event_curve
 
 
-def plot_events_and_pressure(time, events_vs_time, pore_pressure_vs_time, time_unit=None):
+def plot_events_and_pressure_vs_time(time, events_vs_time, pore_pressure_vs_time, time_unit=None):
     """
     Визуализация микросейсмических событий и давления от времени с опцией агрегирования.
 
@@ -102,8 +58,9 @@ def plot_events_and_pressure(time, events_vs_time, pore_pressure_vs_time, time_u
     plt.tight_layout()
     plt.title("Микросейсмические события и давление во времени", fontsize=13)
     plt.show()
+
     
-def plot_events_vs_pressure(pore_pressure_vs_time, events_vs_time):
+def plot_events_vs_pressure(pore_pressure_vs_time, events_vs_time, bins_count=100):
     """
     Визуализация микросейсмических событий как функции от порового давления с разбиением по бинам.
     Предполагается, что давление уже передано в нужных единицах (обычно МПа), и ширина бина = 1.
@@ -117,7 +74,7 @@ def plot_events_vs_pressure(pore_pressure_vs_time, events_vs_time):
         Количество микросейсмических событий во времени
     """
     pressure = pore_pressure_vs_time
-    bin_width = 1.0
+    bin_width = (np.max(pressure) - np.min(pressure))/bins_count
 
     total_events = np.sum(events_vs_time)
     norm_events = events_vs_time / total_events if total_events > 0 else events_vs_time
@@ -132,7 +89,7 @@ def plot_events_vs_pressure(pore_pressure_vs_time, events_vs_time):
     ax.bar(bin_centers, binned_events, width=bin_width, align='center',
            alpha=0.7, color='steelblue', label=f'События (всего: {total_events})')
 
-    ax.set_xlabel("Поровое давление", fontsize=12)
+    ax.set_xlabel("Поровое давление, МПа", fontsize=12)
     ax.set_ylabel("Отн. число событий", fontsize=12)
     ax.set_title("Микросейсмические события в зависимости от давления", fontsize=13)
     ax.grid(True, linestyle=':', linewidth=0.5)
