@@ -92,48 +92,6 @@ def compute_normalized_event_curve(time, events_vs_time, time_unit=None):
     if events_vs_time.ndim == 1:
         return 0.5*(bin_edges[:-1]+bin_edges[1:]), binned[0]
     return 0.5*(bin_edges[:-1]+bin_edges[1:]), binned
-# def compute_normalized_event_curve(time, events_vs_time, time_unit=None):
-#     """
-#     Вычисляет нормированную кривую микросейсмических событий, с агрегацией по времени.
 
-#     Параметры:
-#     ----------
-#     time : np.ndarray (T,)
-#         Массив времени в секундах
 
-#     events_vs_time : np.ndarray (T,)
-#         Массив количества микросейсмических событий во времени
-
-#     time_unit : str or None
-#         Единица агрегации времени: 'm', 'h', 'd' — минуты, часы или дни.
-#         Если None, возвращается нормированная кривая без агрегации.
-
-#     Возвращает:
-#     -----------
-#     time_out : np.ndarray
-#         Временные метки (в нужной размерности)
-
-#     event_curve : np.ndarray
-#         Нормированная кривая событий по бинам
-#     """
-#     unit_multipliers = {'m': 60, 'h': 3600, 'd': 86400}
-
-#     total_events = np.sum(events_vs_time)
-#     norm_events = events_vs_time / total_events if total_events > 0 else events_vs_time
-
-#     if time_unit is None:
-#         return time, norm_events
-
-#     if time_unit not in unit_multipliers:
-#         raise ValueError("time_unit должен быть одним из: 'm', 'h', 'd' или None")
-
-#     scale = unit_multipliers[time_unit]
-#     time_scaled = time / scale
-
-#     bin_edges = np.arange(np.floor(time_scaled.min()), np.ceil(time_scaled.max()) + 1)
-#     bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-
-#     binned_events, _ = np.histogram(time_scaled, bins=bin_edges, weights=norm_events)
-
-#     return bin_centers, binned_events
 
