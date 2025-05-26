@@ -12,7 +12,7 @@ def plot_stress_tensor_with_rotated_ensemble(tensor,
                                               max_ensemble_to_plot=100):
     """
     Визуализирует исходный и повернутый тензор напряжений, а также ансамбль случайных реализаций
-    на основе ориентации, заданной через углы Эйлера: trend, plunge, rake (по Zoback).
+    на основе ориентации, заданной через углы Эйлера: trend, plunge, rake.
 
     Аргументы:
     - tensor: StressTensor — основной эталонный тензор

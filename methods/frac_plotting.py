@@ -189,16 +189,10 @@ def plot_fracture_ensemble_on_sphere(normals=None,
     # plt.tight_layout()  # обычно не нужен в 3D
     plt.show()
 
-"""
-Стереогрммы без тензора напряжений
-"""
+
 def plot_fracture_normals_and_planes(normals, seed=None, max_to_plot=1000):
     """
-    2D‐визуализация полюсов (нормалей) трещин и их контуров:
-      - Точки полюсов на нижней полусфере
-      - Дуги пересечения каждой плоскости трещины с единичной окружностью
-      - Особая дуга для «материнской» трещины (seed)
-      - Подписи сторон света
+    Стереогрмма без тензора напряжений
 
     Аргументы:
     ----------
@@ -267,14 +261,10 @@ def plot_fracture_normals_and_planes(normals, seed=None, max_to_plot=1000):
 
     plt.show()
 
-"""Плотность распределения полюсов - Kamb Contours in Standard Deviations"""
+
 def plot_fracture_density(normals):
     """
-    2D‐контур плотности полюсов на нижней полусфере:
-      - Оценка плотности методом KDE
-      - Запрет значений вне единичного круга
-      - colorbar с подписью
-      - Подписи сторон света
+    Плотность распределения полюсов - Kamb Contours in Standard Deviations
     """
     # Нормализация и фильтрация по z < 0
     normals = normals / np.linalg.norm(normals, axis=1, keepdims=True)

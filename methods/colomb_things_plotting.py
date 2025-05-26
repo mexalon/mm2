@@ -91,7 +91,7 @@ def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
     # Линия Кулона
     ax.plot(sigma_line, tau_failure, 'r--',
             label=fr'$\tau = {mu:.2f}\,\sigma_{{\mathrm{{eff}}}} + {cohesion:.2f}$',
-            linewidth=1.2)
+            linewidth=1.2, zorder=15)  
 
     # Оформление шрифтов 12
     ax.set_xlim(sigma_min, sigma_max)
