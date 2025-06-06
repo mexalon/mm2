@@ -78,9 +78,9 @@ def check_coulomb_failure(sigma_n, tau, mu, cohesion, pore_pressure=0.0):
     return failures
 
 
-def critical_pore_pressure(tensor, seed):
+def critical_pore_pressure(principal_stresses, mu, cohesion):
     """
-    Вычисляет критическое поровое давление, при котором круг Мора касается критерия Кулона,
+    Вычисляет критические поровые давления, при котором соответсвующие круги Мора касаются критерия Кулона,
     на основе объектов StressTensor и FractureSeed.
 
     Параметры:
@@ -93,24 +93,79 @@ def critical_pore_pressure(tensor, seed):
 
     Возвращает:
     -----------
-    p_crit : float
-        Критическое поровое давление
+    p_crit : tuple (3,)
+        Критические поровые давления для трех кругов
     """
-    s1, s2, s3 = sorted(tensor.principal_stresses, reverse=True)
-    mu = seed.mu
-    cohesion = seed.cohesion
+    def get_p_crit(smin, smax):
+        # Центр и радиус большого круга Мора
+        C = (smax + smin)/2 
+        R = (smax - smin)/2
 
-    # Центр и радиус большого круга Мора
-    C = (s1 + s3)/2
-    R = (s1 - s3)/2
+        # Расстояние от центра круга до прямой Кулона при p = 0 из геометрии
+        # d = (mu * C + cohesion) / (mu**2 + 1)**0.5 
+        # d = R при касании, когда центр круга смещен на p_crit
+        # R = (mu * (C - p_crit) + cohesion) / (mu**2 + 1)**0.5
+        # откуда:
 
-    # Расстояние от центра круга до прямой Кулона при p = 0
-    # d = abs(-mu * C - cohesion) / (mu**2 + 1)**0.5
+        # Критическое поровое давление
+        p_crit = C - (R * (mu**2 + 1)**0.5 - cohesion) / mu
+        return p_crit
+    
+    s1, s2, s3 = sorted(principal_stresses, reverse=True)
 
-    # Критическое расстояние до касания
-    d_crit = R * (1 + mu**2)**0.5
+    return get_p_crit(s3, s1), get_p_crit(s2, s1), get_p_crit(s3, s2)
 
-    # Критическое поровое давление
-    p_crit = C + (-1 * d_crit + cohesion) / mu
 
-    return p_crit
+def normal_to_strike_dip(n):
+    """
+    Перевод нормали (геодезическая система: x-восток, y-север, z-вверх)
+    в углы strike (азимут от севера по часовой) и dip (0…90°, вниз).
+    """
+    # Dip: 0° – горизонтальная плоскость (n_z = –1); 90° – вертикальная.
+    dip = np.degrees(np.arccos(-n[2]))
+
+    # Strike: направление линии пересечения плоскости с горизонтом
+    # s = n × k  ,  k=(0,0,1)
+    s_x = n[1]
+    s_y = -n[0]
+    if np.isclose(dip, 0.0):
+        strike = 0.0          # горизонталь: strike не определён
+    else:
+        strike = (np.degrees(np.arctan2(s_x, s_y)) + 360) % 360
+    return strike, dip
+
+
+def get_critical_strike_dip(tensor, mu):
+    """
+    Возвращает два сопряжённых решения (strike, dip) для критической трещины
+    
+    """
+    # индексы максимального и минимального главных напряжений
+    ps = tensor.principal_stresses
+    idx_max = int(np.argmax(ps))
+    idx_min = int(np.argmin(ps))
+
+    alpha = np.pi/4 + 1/2 * np.arctan(mu)          # угол между нормалью и σ₁
+
+    normals_geo = []
+    signs = (+1, -1)               # два сопряжённых решения
+    for s in signs:
+        n_pr = np.zeros(3)
+        n_pr[idx_max] =  np.cos(alpha)
+        n_pr[idx_min] =  s * np.sin(alpha)
+
+        # перевод из главных в геодезические оси
+        n_geo = tensor.rotation_matrix @ n_pr
+
+        # нормаль должна смотреть ВНИЗ (n_z ≤ 0)
+        if n_geo[2] > 0:
+            n_geo = -n_geo
+
+        n_geo /= np.linalg.norm(n_geo)
+        normals_geo.append(n_geo)
+
+    # переводим обе нормали в strike/dip
+    strikes_dips = [normal_to_strike_dip(n) for n in normals_geo]
+
+    return strikes_dips    # [(strike1, dip1), (strike2, dip2)]
+

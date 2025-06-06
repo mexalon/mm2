@@ -2,55 +2,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 
-def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0, 
+def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
                                  pore_pressure=0.0, principal_stresses=None):
     """
     Визуализация диаграммы Кулона-Мора с кругами Мора и контурной картой 
     относительной плотности нормальных и касательных напряжений,
-    с обрезкой за пределами большого круга и внутри малых.
-
-    Параметры:
-    ----------
-    sigma_n : np.ndarray (M,)
-        Нормальные напряжения
-
-    tau : np.ndarray (M,)
-        Касательные напряжения
-
-    mu : float
-        Коэффициент трения
-
-    cohesion : float
-        Сцепление
-
-    principal_stresses : array-like (3,), optional
-        Главные напряжения
-
-    pore_pressure : float
-        Поровое давление, вычитаемое из σₙ
+    с обрезкой за пределами большого круга и внутри малых,
+    причём сетка и оси рисуются поверх патчей.
     """
     sigma_eff = sigma_n - pore_pressure
 
     # Рассчёт кругов Мора
     if principal_stresses is not None:
         s1, s2, s3 = np.sort(principal_stresses)[::-1]
-        C_big = 0.5 * (s1 + s3) - pore_pressure
-        R_big = 0.5 * (s1 - s3)
+        C_big    = 0.5 * (s1 + s3) - pore_pressure
+        R_big    = 0.5 * (s1 - s3)
         C_small1 = 0.5 * (s1 + s2) - pore_pressure
         R_small1 = 0.5 * (s1 - s2)
         C_small2 = 0.5 * (s2 + s3) - pore_pressure
         R_small2 = 0.5 * (s2 - s3)
-        sigma_min, sigma_max = 0, (s1 - pore_pressure) * 1.05
-        tau_min, tau_max = 0, R_big * 1.05
+        sigma_min, sigma_max = 0, s1 * 1.05
+        tau_min,    tau_max  = 0, R_big * 1.05
     else:
         sigma_min, sigma_max = 0, np.max(sigma_eff) * 1.05
-        tau_min, tau_max = 0, np.max(tau) * 1.05
+        tau_min,    tau_max  = 0, np.max(tau) * 1.05
 
     # Прямая Кулона
-    sigma_line = np.linspace(sigma_min, sigma_max, 500)
+    sigma_line  = np.linspace(sigma_min, sigma_max, 500)
     tau_failure = mu * sigma_line + cohesion
 
-    # Гистограмма плотности
+    # Двумерный гистограммный подсчёт относительной плотности
     H, xedges, yedges = np.histogram2d(
         sigma_eff, tau,
         bins=64,
@@ -61,51 +42,83 @@ def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
     X = 0.5 * (xedges[:-1] + xedges[1:])
     Y = 0.5 * (yedges[:-1] + yedges[1:])
 
-    fig, ax = plt.subplots(figsize=(6, 4.5))
-    cf = ax.contourf(X, Y, H_rel.T, levels=10, cmap='cubehelix_r', alpha=0.8)
+    fig, ax = plt.subplots(figsize=(8, 4))
 
-    # Обрезка за пределами большого круга
-    big_circle = Circle((C_big, 0), R_big, transform=ax.transData)
+    # Контурная карта плотности (zorder=5)
+    cf = ax.contourf(
+        X, Y, H_rel.T,
+        levels=10,
+        cmap='cubehelix_r',
+        alpha=0.8,
+        zorder=5
+    )
+
+    # Обрезка за пределами большого круга (zorder=0, просто для клиппинга)
+    big_circle = Circle((C_big, 0), R_big, transform=ax.transData,
+                        facecolor='none', edgecolor='none', zorder=0)
     cf.set_clip_path(big_circle)
 
-    # Маскировка внутри малых кругов
+    # Маскировка внутри малых кругов (теперь zorder=15, перекрывает плотность)
     if principal_stresses is not None:
         for C, R in [(C_small1, R_small1), (C_small2, R_small2)]:
-            ax.add_patch(Circle((C, 0), R, transform=ax.transData,
-                                facecolor='white', edgecolor='none', zorder=10))
+            ax.add_patch(Circle(
+                (C, 0), R,
+                transform=ax.transData,
+                facecolor='white',
+                edgecolor='none',
+                zorder=15  # Патчи поверх плотности, но ниже сетки
+            ))
 
-    # Колорбар
+    # Круги Мора (zorder=10)
+    if principal_stresses is not None:
+        for (C, R, color) in [
+            (C_big,    R_big,    'black'),
+            (C_small1, R_small1, 'gray'),
+            (C_small2, R_small2, 'lightgray')
+        ]:
+            theta = np.linspace(0, np.pi, 300)
+            ax.plot(
+                C + R * np.cos(theta),
+                R * np.sin(theta),
+                '--',
+                color=color,
+                linewidth=1,
+                zorder=10
+            )
+
+    # Линия Кулона (zorder=15)
+    ax.plot(
+        sigma_line, tau_failure, 'r--',
+        label=fr'$\tau = {mu:.2f}\,\sigma_{{\mathrm{{eff}}}} + {cohesion:.2f}$',
+        linewidth=1.2,
+        zorder=15
+    )
+
+    # Рисуем сетку поверх патчей и осей (zorder=20)
+    ax.set_axisbelow(False)
+    ax.grid(True, linestyle=':', linewidth=0.5, zorder=20)
+    
+    # Колорбар (не мешает порядку на оси)
     cbar = plt.colorbar(cf, ax=ax, fraction=0.046, pad=0.04, shrink=0.5)
     cbar.ax.tick_params(labelsize=12)
     cbar.set_label('Отн. плотность', fontsize=12)
 
-    # Круги Мора
-    if principal_stresses is not None:
-        for (C, R, color) in [(C_big, R_big, 'black'),
-                               (C_small1, R_small1, 'gray'),
-                               (C_small2, R_small2, 'lightgray')]:
-            theta = np.linspace(0, np.pi, 300)
-            ax.plot(C + R*np.cos(theta), R*np.sin(theta), '--',
-                    color=color, linewidth=1)
+    # Легенда поверх всего (zorder=25)
+    leg = ax.legend(fontsize=12, loc='lower right', frameon=True)
+    leg.set_zorder(25)
 
-    # Линия Кулона
-    ax.plot(sigma_line, tau_failure, 'r--',
-            label=fr'$\tau = {mu:.2f}\,\sigma_{{\mathrm{{eff}}}} + {cohesion:.2f}$',
-            linewidth=1.2, zorder=15)  
-
-    # Оформление шрифтов 12
+    # Оформление финальных шрифтов и масштабов
     ax.set_xlim(sigma_min, sigma_max)
     ax.set_ylim(tau_min, tau_max)
     ax.set_xlabel(r'$\sigma_{\mathrm{eff}}$, МПа', fontsize=12)
     ax.set_ylabel(r'$\tau$, МПа', fontsize=12)
     ax.set_title('Диаграмма Кулона-Мора (плотность)', fontsize=12)
-    leg = ax.legend(fontsize=12, loc='lower right', frameon=True)
-    leg.set_zorder(20)
-    ax.grid(True, linestyle=':', linewidth=0.5)
     ax.set_aspect('equal', adjustable='box')
     ax.tick_params(labelsize=12)
+
     plt.tight_layout()
     plt.show()
+
 
 
 def plot_coulomb_diagram(sigma_n, tau, mu=0.6, cohesion=0.0, pore_pressure=0.0, principal_stresses=None, failures=None, ):

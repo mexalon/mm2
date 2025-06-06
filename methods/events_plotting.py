@@ -60,40 +60,109 @@ def plot_events_and_pressure_vs_time(time, events_vs_time, pore_pressure_vs_time
     plt.show()
 
     
-def plot_events_vs_pressure(pore_pressure_vs_time, events_vs_time, bins_count=100):
+def plot_events_vs_pressure(pore_pressure_vs_time,
+                            events_vs_time,
+                            bins_count: int = 100,
+                            cpps: tuple[float, float, float] | None = None):
     """
-    Визуализация микросейсмических событий как функции от порового давления с разбиением по бинам.
-    Предполагается, что давление уже передано в нужных единицах (МПа), и ширина бина = 1.
+    Визуализация относительного числа микросейсмических событий
+    как функции порового давления.
 
-    Параметры:
+    Parameters
     ----------
     pore_pressure_vs_time : np.ndarray (T,)
-        Поровое давление во времени (в нужных единицах, напр. МПа)
+        Поровое давление во времени (МПа).
 
     events_vs_time : np.ndarray (T,)
-        Количество микросейсмических событий во времени
-    """
-    pressure = pore_pressure_vs_time
-    bin_width = (np.max(pressure) - np.min(pressure))/bins_count
+        Количество микросейсмических событий во времени.
 
-    total_events = np.sum(events_vs_time)
+    bins_count : int, default 100
+        Число бинов по оси давления.
+
+    cpps : tuple(float, float, float) | None, default None
+        Критические давления (P*-точки). Если передано,
+        на график наносятся вертикальные пунктирные линии для
+        каждого значения, попадающего в диапазон отображаемых давлений.
+    """
+    pressure = np.asarray(pore_pressure_vs_time, dtype=float)
+    bin_width = (pressure.max() - pressure.min()) / bins_count
+
+    total_events = events_vs_time.sum()
     norm_events = events_vs_time / total_events if total_events > 0 else events_vs_time
 
-    # Биннинг с шагом 1
-    bin_edges = np.arange(np.floor(pressure.min()), np.ceil(pressure.max()) + bin_width, bin_width)
+    # биннинг
+    bin_edges = np.arange(np.floor(pressure.min()),
+                          np.ceil(pressure.max()) + bin_width,
+                          bin_width)
     bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-    binned_events, _ = np.histogram(pressure, bins=bin_edges, weights=norm_events)
+    binned_events, _ = np.histogram(pressure,
+                                    bins=bin_edges,
+                                    weights=norm_events)
 
-    # Визуализация
+    # --- визуализация --------------------------------------------------------
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar(bin_centers, binned_events, width=bin_width, align='center',
-           alpha=0.7, color='steelblue', label=f'События (всего: {total_events})')
+    ax.bar(bin_centers,
+           binned_events,
+           width=bin_width,
+           align='center',
+           alpha=0.7,
+           color='steelblue',
+           label=f'События (всего: {total_events})')
+
+    # критические давления, если заданы
+    if cpps is not None:
+        p_min, p_max = pressure.min(), pressure.max()
+        for p in cpps:
+            if p_min <= p <= p_max:
+                ax.axvline(p,
+                           linestyle=':',
+                           linewidth=1,
+                           color='r')
 
     ax.set_xlabel("Поровое давление, МПа", fontsize=12)
-    ax.set_ylabel("Отн. число событий", fontsize=12)
-    ax.set_title("Микросейсмические события в зависимости от давления", fontsize=13)
+    ax.set_ylabel("Отн. число событий",   fontsize=12)
+    ax.set_title("Микросейсмические события в зависимости от давления",
+                 fontsize=13)
     ax.grid(True, linestyle=':', linewidth=0.5)
     ax.legend(loc='upper left', fontsize=10)
     ax.set_xlim(pressure.min(), pressure.max())
     plt.tight_layout()
     plt.show()
+
+# def plot_events_vs_pressure(pore_pressure_vs_time, events_vs_time, bins_count=100):
+#     """
+#     Визуализация микросейсмических событий как функции от порового давления с разбиением по бинам.
+#     Предполагается, что давление уже передано в нужных единицах (МПа), и ширина бина = 1.
+
+#     Параметры:
+#     ----------
+#     pore_pressure_vs_time : np.ndarray (T,)
+#         Поровое давление во времени (в нужных единицах, напр. МПа)
+
+#     events_vs_time : np.ndarray (T,)
+#         Количество микросейсмических событий во времени
+#     """
+#     pressure = pore_pressure_vs_time
+#     bin_width = (np.max(pressure) - np.min(pressure))/bins_count
+
+#     total_events = np.sum(events_vs_time)
+#     norm_events = events_vs_time / total_events if total_events > 0 else events_vs_time
+
+#     # Биннинг с шагом 1
+#     bin_edges = np.arange(np.floor(pressure.min()), np.ceil(pressure.max()) + bin_width, bin_width)
+#     bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+#     binned_events, _ = np.histogram(pressure, bins=bin_edges, weights=norm_events)
+
+#     # Визуализация
+#     fig, ax = plt.subplots(figsize=(8, 4))
+#     ax.bar(bin_centers, binned_events, width=bin_width, align='center',
+#            alpha=0.7, color='steelblue', label=f'События (всего: {total_events})')
+
+#     ax.set_xlabel("Поровое давление, МПа", fontsize=12)
+#     ax.set_ylabel("Отн. число событий", fontsize=12)
+#     ax.set_title("Микросейсмические события в зависимости от давления", fontsize=13)
+#     ax.grid(True, linestyle=':', linewidth=0.5)
+#     ax.legend(loc='upper left', fontsize=10)
+#     ax.set_xlim(pressure.min(), pressure.max())
+#     plt.tight_layout()
+#     plt.show()
