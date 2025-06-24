@@ -18,9 +18,11 @@ def simulate_microseismicity_over_time(sigma_n, tau, mu, cohesion, pore_pressure
     # Храним массив нарушений критерия Кулона
     failures_vs_time = np.zeros((T, N, M), dtype=bool)
 
-    print("Проверка критерия Кулона-Мора по времени...")
-    for t in tqdm(range(T), desc="Временные шаги", leave=False):
+    for t in range(T):
         failures_vs_time[t] = check_coulomb_failure(sigma_n, tau, mu, cohesion, pore_pressure=pore_pressure_vs_time[t])
+
+    # for t in tqdm(range(T), desc="Временные шаги", leave=False):
+    #     failures_vs_time[t] = check_coulomb_failure(sigma_n, tau, mu, cohesion, pore_pressure=pore_pressure_vs_time[t])
 
     # Исключаем трещины, которые уже были нестабильны в начальный момент
     ever_failed = failures_vs_time[0].copy()

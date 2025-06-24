@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 
 def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
-                                 pore_pressure=0.0, principal_stresses=None):
+                                 pore_pressure=0.0, principal_stresses=None, fname=None):
     """
     Визуализация диаграммы Кулона-Мора с кругами Мора и контурной картой 
     относительной плотности нормальных и касательных напряжений,
@@ -21,7 +21,7 @@ def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
         R_small1 = 0.5 * (s1 - s2)
         C_small2 = 0.5 * (s2 + s3) - pore_pressure
         R_small2 = 0.5 * (s2 - s3)
-        sigma_min, sigma_max = 0, s1 * 1.05
+        sigma_min, sigma_max = 0, (s1 - pore_pressure) * 1.05
         tau_min,    tau_max  = 0, R_big * 1.05
     else:
         sigma_min, sigma_max = 0, np.max(sigma_eff) * 1.05
@@ -42,7 +42,7 @@ def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
     X = 0.5 * (xedges[:-1] + xedges[1:])
     Y = 0.5 * (yedges[:-1] + yedges[1:])
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 4.5))
 
     # Контурная карта плотности (zorder=5)
     cf = ax.contourf(
@@ -95,8 +95,10 @@ def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
     )
 
     # Рисуем сетку поверх патчей и осей (zorder=20)
-    ax.set_axisbelow(False)
-    ax.grid(True, linestyle=':', linewidth=0.5, zorder=20)
+    ax.grid(True, linestyle=':', linewidth=0.5, color='0.7')
+    for ln in ax.get_xgridlines() + ax.get_ygridlines():
+        ln.set_zorder(15)        # выше любых патчей-масок
+        ln.set_alpha(1.0)        # непрозрачная
     
     # Колорбар (не мешает порядку на оси)
     cbar = plt.colorbar(cf, ax=ax, fraction=0.046, pad=0.04, shrink=0.5)
@@ -117,11 +119,16 @@ def plot_coulomb_diagram_density(sigma_n, tau, mu=0.6, cohesion=0.0,
     ax.tick_params(labelsize=12)
 
     plt.tight_layout()
-    plt.show()
+    
+    if fname:
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 
 
-def plot_coulomb_diagram(sigma_n, tau, mu=0.6, cohesion=0.0, pore_pressure=0.0, principal_stresses=None, failures=None, ):
+def plot_coulomb_diagram(sigma_n, tau, mu=0.6, cohesion=0.0, pore_pressure=0.0, principal_stresses=None, failures=None, fname=None):
     """
     Визуализация диаграммы Кулона-Мора с кругами Мора и учётом порового давления.
 
@@ -215,4 +222,9 @@ def plot_coulomb_diagram(sigma_n, tau, mu=0.6, cohesion=0.0, pore_pressure=0.0, 
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
     plt.tight_layout()
-    plt.show()
+
+    if fname:
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()

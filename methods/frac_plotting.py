@@ -15,7 +15,8 @@ from scipy.stats import gaussian_kde
 '''
 def plot_fracture_ensemble_on_sphere(normals=None,
                                      seed=None,
-                                     max_to_plot=40):
+                                     max_to_plot=40,
+                                     fname=None):
     """
     3D-визуализация ансамбля трещин:
       - Сфера (тектонная модель)
@@ -187,10 +188,15 @@ def plot_fracture_ensemble_on_sphere(normals=None,
     # ax.legend(handles=custom_lines, loc='upper left', fontsize=12)
 
     # plt.tight_layout()  # обычно не нужен в 3D
-    plt.show()
+    
+    if fname:
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 
-def plot_fracture_normals_and_planes(normals, seed=None, max_to_plot=1000):
+def plot_fracture_normals_and_planes(normals, seed=None, max_to_plot=1000, fname=None):
     """
     Стереогрмма без тензора напряжений
 
@@ -259,10 +265,14 @@ def plot_fracture_normals_and_planes(normals, seed=None, max_to_plot=1000):
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    plt.show()
+    if fname:
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 
-def plot_fracture_density(normals):
+def plot_fracture_density(normals, fname=None):
     """
     Плотность распределения полюсов - Kamb Contours in Standard Deviations
     """
@@ -324,10 +334,14 @@ def plot_fracture_density(normals):
     for sp in ax.spines.values():
         sp.set_visible(False)
 
-    plt.show()
+    if fname is None:
+        plt.show()
+    else:
+        fig.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close(fig)
 
 """Роза направлений страйк"""
-def plot_fracture_strike_rose(strike_samples, n_bins=36):
+def plot_fracture_strike_rose(strike_samples, n_bins=36, fname=None):
     """
     Полярная диаграмма «роза направлений» strike:
       - Гистограмма направлений с равномерными бинами
@@ -356,7 +370,11 @@ def plot_fracture_strike_rose(strike_samples, n_bins=36):
     ax.set_xticklabels(['N', 'E', 'S', 'W'])
     ax.set_title("Роза направлений (strike)", fontsize=12)
 
-    plt.show()
+    if fname:
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
 
 
 def plot_great_circle(ax, normal, n_points=200, **kwargs):
@@ -385,7 +403,7 @@ def plot_great_circle(ax, normal, n_points=200, **kwargs):
     for seg in segments:
         if len(seg) > 1 and np.all(seg[:, 2] < 0):
             ax.plot(seg[:, 0], seg[:, 1], **kwargs)
-
+    
 
 def label_cardinal_directions(ax, r=1.08, fontsize=12):
     """
@@ -399,7 +417,7 @@ def label_cardinal_directions(ax, r=1.08, fontsize=12):
     ax.text(-r,  0, 'W', ha='right',  va='center', fontsize=fontsize)
 
 
-def plot_mu_cohesion_histograms(mu, cohesion, bins=50):
+def plot_mu_cohesion_histograms(mu, cohesion, bins=50, fname=None):
     """
     Отображает маленькие гистограммы распределения коэффициента трения и сцепления.
 
@@ -414,8 +432,6 @@ def plot_mu_cohesion_histograms(mu, cohesion, bins=50):
     bins : int
         Количество бинов в гистограммах
     """
-    import matplotlib.pyplot as plt
-
     fig, axes = plt.subplots(1, 2, figsize=(6, 2.5), constrained_layout=True)
 
     axes[0].hist(mu, bins=bins, color='skyblue', edgecolor='k', alpha=0.8)
@@ -435,4 +451,8 @@ def plot_mu_cohesion_histograms(mu, cohesion, bins=50):
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-    plt.show()
+    if fname:
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()

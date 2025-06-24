@@ -9,7 +9,8 @@ def plot_stress_tensor_with_rotated_ensemble(tensor,
                                               ensemble_trends=None,
                                               ensemble_plunges=None,
                                               ensemble_rakes=None,
-                                              max_ensemble_to_plot=100):
+                                              max_ensemble_to_plot=100,
+                                              fname=None):
     """
     Визуализирует исходный и повернутый тензор напряжений, а также ансамбль случайных реализаций
     на основе ориентации, заданной через углы Эйлера: trend, plunge, rake.
@@ -101,4 +102,9 @@ def plot_stress_tensor_with_rotated_ensemble(tensor,
     ax.text(scale, 1.4 * scale, -0.2 * scale, r'$Z$', fontsize=12)
 
     ax.view_init(elev=15)
-    plt.show()
+
+    if fname:
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
